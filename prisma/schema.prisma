@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  role      Role      @default(STUDENT)
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+}
+
+enum Role {
+  STUDENT
+  PARENT
+}
+
+model Skill {
+  id          String    @id @default(cuid())
+  subject     Subject
+  grade       Int
+  key         String    @unique
+  title       String
+  description String
+  createdAt   DateTime  @default(now())
+  sessions    Session[]
+}
+
+enum Subject {
+  SCIENCE
+  MATH
+  STEM_FLIGHT_SPACE
+  SOCIAL_STUDIES
+  LANGUAGE_ARTS
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  skillId     String
+  skill       Skill         @relation(fields: [skillId], references: [id])
+  mode        Mode          @default(STUDY)
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  status      SessionStatus @default(ACTIVE)
+  turns       Turn[]
+  attempts    Attempt[]
+  events      Event[]
+}
+
+enum Mode {
+  STUDY
+  ASSESSMENT
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model Turn {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  actor     Actor
+  content   String
+  type      TurnType
+  createdAt DateTime @default(now())
+}
+
+enum Actor {
+  STUDENT
+  TUTOR
+}
+
+enum TurnType {
+  QUESTION
+  HINT
+  ATTEMPT
+  SOLUTION
+  FEEDBACK
+}
+
+model Attempt {
+  id         String        @id @default(cuid())
+  sessionId  String
+  session    Session       @relation(fields: [sessionId], references: [id])
+  status     AttemptStatus @default(INCOMPLETE)
+  accuracy   Float?
+  timeSec    Int?
+  reflection String?
+  imagePath  String?
+  createdAt  DateTime      @default(now())
+}
+
+enum AttemptStatus {
+  INCOMPLETE
+  SOLVED
+  GAVE_UP
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  name      String
+  meta      Json?
+  createdAt DateTime @default(now())
+}
