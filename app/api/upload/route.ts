@@ -1,11 +1,11 @@
-// app/api/upload/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
+import { NextResponse } from "next/server";
 import path from "path";
+import fs from "fs";
 
+// We need Node runtime for fs access
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const form = await req.formData();
   const file = form.get("file");
   const sessionId = String(form.get("sessionId") || "");
@@ -14,14 +14,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bad upload" }, { status: 400 });
   }
 
-  const uploadDir = process.env.UPLOAD_DIR || "./uploads";
-  const dir = path.join(uploadDir, sessionId);
-  await fs.mkdir(dir, { recursive: true });
+  // Use /tmp on Netlify (ephemeral, but writable); local 'uploads' in dev
+  const baseDir = process.env.NETLIFY
+    ? "/tmp/uploads"
+    : path.join(process.cwd(), "uploads");
+
+  const targetDir = path.join(baseDir, sessionId);
+  await fs.promises.mkdir(targetDir, { recursive: true });
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const name = `${Date.now()}.jpg`;
-  const full = path.join(dir, name);
-  await fs.writeFile(full, buf);
+  const filename = `${Date.now()}.jpg`;
+  const target = path.join(targetDir, filename);
 
-  return NextResponse.json({ imageId: `${sessionId}/${name}` });
+  await fs.promises.writeFile(target, buf);
+
+  return NextResponse.json({ ok: true, imageId: `${sessionId}/${filename}` });
 }
