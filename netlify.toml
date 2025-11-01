@@ -10,8 +10,8 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Safety net: force all routes to the Next handler
+# Route ALL requests to the actual handler name
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/next"
+  to = "/.netlify/functions/___netlify-server-handler"
   status = 200
