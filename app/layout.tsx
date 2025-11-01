@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { SessionProvider } from '@/components/SessionProvider';
@@ -10,8 +11,8 @@ import Link from "next/link";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'StudyRight - WCMS Edition',
-  description: 'Socratic tutoring for 8th-grade students',
+  title: 'StudyAid4U',
+  description: 'AI Study Helper',
 };
 
 export default async function RootLayout({

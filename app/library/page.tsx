@@ -9,6 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { Subject } from '@prisma/client';
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const subjectLabels: Record<Subject, string> = {
   MATH: 'Math',
   SCIENCE: 'Science',

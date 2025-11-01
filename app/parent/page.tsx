@@ -1,6 +1,10 @@
 // app/parent/page.tsx
 import { prisma } from "../../lib/prisma";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Keep types minimal to match your actual schema right now
 type SessionRow = {
   id: string;

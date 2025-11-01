@@ -1,67 +1,70 @@
-import { spawn } from "child_process";
+// tools/full-build.mjs
+import { spawn } from "node:child_process";
 
-const run = (cmd, args, opts={}) =>
-  new Promise((resolve, reject) => {
-    const p = spawn(cmd, args, { stdio: "inherit", shell: process.platform === "win32", ...opts });
-    p.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`${cmd} ${args.join(' ')} exited ${code}`)));
+const RUN = (cmd, args, opts={}) =>
+  new Promise((res, rej) => {
+    const p = spawn(cmd, args, { stdio: "inherit", shell: true, ...opts });
+    p.on("close", (code) => code === 0 ? res() : rej(new Error(`${cmd} ${args.join(" ")} exited ${code}`)));
   });
 
+async function waitFor(url, tries=60) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, { method: "GET" });
+      if (r.ok || r.status === 404) return;
+    } catch {}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error(`Server did not become ready: ${url}`);
+}
+
+async function smoke(host) {
+  const tests = [
+    { name: "home",        url: `${host}/` },
+    { name: "quick-quiz",  url: `${host}/quick-quiz` },
+    // tutor API stubs (POST)
+    { name: "tutor/start",      url: `${host}/api/tutor/start`,      method: "POST", body: {} },
+    { name: "tutor/hint",       url: `${host}/api/tutor/hint`,       method: "POST", body: { topic: "test topic" } },
+    { name: "tutor/attempt",    url: `${host}/api/tutor/attempt`,    method: "POST", body: { attempt: "2+2=5" } },
+    { name: "tutor/reflection", url: `${host}/api/tutor/reflection`, method: "POST", body: { attempt: "answer" } },
+    { name: "tutor/reveal",     url: `${host}/api/tutor/reveal`,     method: "POST", body: { prompt: "2+2?" } },
+    // add Library page if you have it:
+    // { name: "library", url: `${host}/library` },
+  ];
+
+  for (const t of tests) {
+    const init = t.method === "POST"
+      ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(t.body ?? {}) }
+      : { method: "GET" };
+    const r = await fetch(t.url, init);
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      throw new Error(`${t.name}: ${r.status} ${r.statusText}\n${body.slice(0, 200)}`);
+    }
+    console.log(`✔ ${t.name}`);
+  }
+}
+
 (async () => {
+  // 1) prisma + build (use ; separators on Windows via shell:true)
+  await RUN("npx", ["prisma", "generate"]);
+  await RUN("npx", ["prisma", "migrate", "deploy"]);
+  await RUN("npm", ["run", "build"]);
+
+  // 2) start server
+  const server = spawn("npm", ["start"], { shell: true, stdio: "inherit" });
+
   try {
-    // 1) Prisma: format/validate/generate
-    await run("npm", ["run", "regen"]);
-
-    // 2) TypeScript type-check (fast fail)
-    await run("npm", ["run", "typecheck"]);
-
-    // 3) Next.js production build
-    await run("npm", ["run", "build"]);
-
-    // 4) Start the prod server in background
-    const server = spawn("npm", ["run", "start"], { shell: process.platform === "win32" });
-    server.stdout.on("data", d => process.stdout.write(d));
-    server.stderr.on("data", d => process.stderr.write(d));
-
-    // 5) Wait until the server is listening
-    const waitFor = async (tries = 60) => {
-      const delay = (ms) => new Promise(r => setTimeout(r, ms));
-      for (let i = 0; i < tries; i++) {
-        try {
-          const res = await fetch("http://localhost:3000");
-          if (res.ok || res.status === 404) return;
-        } catch {}
-        await delay(500);
-      }
-      throw new Error("Server did not become ready on :3000");
-    };
-    await waitFor();
-
-    // 6) Smoke-test your important routes/APIs
-    const { default: smoke } = await import("./smoke.mjs");
-    const summary = await smoke();
-
-    // 7) Stop server
-    if (process.platform === "win32") {
-      spawn("taskkill", ["/F", "/PID", String(server.pid)], { shell: true });
-    } else {
-      server.kill("SIGTERM");
-    }
-
-    // 8) Evaluate smoke result
-    const failed = summary.filter(s => !s.ok);
-    if (failed.length) {
-      console.error("\nSMOKE FAILURES:");
-      for (const f of failed) {
-        console.error(`- ${f.name}: ${f.status} ${f.error ?? ""}`);
-      }
-      process.exit(1);
-    } else {
-      console.log("\n✅ All smoke checks passed.");
-      process.exit(0);
-    }
+    // 3) wait and smoke
+    await waitFor("http://localhost:3000");
+    await smoke("http://localhost:3000");
+    console.log("✅ FULL BUILD + SMOKE PASSED");
+    process.exitCode = 0;
   } catch (err) {
-    console.error("\n❌ FULL BUILD FAILED");
-    console.error(err?.stack ?? err);
-    process.exit(1);
+    console.error("❌ FULL BUILD FAILED");
+    console.error(err?.message || err);
+    process.exitCode = 1;
+  } finally {
+    server.kill("SIGINT");
   }
 })();
