@@ -3,6 +3,10 @@ import "server-only";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Study Aid",
   description: "Carsyn’s guardrailed tutor",
