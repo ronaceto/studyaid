@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { openai } from "@/lib/openai";
+import { getOpenAI } from "@/lib/openai";
 
 export async function POST(req: Request) {
   const { topic } = await req.json();
-  const r = await openai.chat.completions.create({
+  const r = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: "You are a succinct tutor. Give one nudge, not a solution." },

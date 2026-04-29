@@ -1,6 +1,5 @@
 [build]
-  command = "npx prisma generate && npx prisma migrate deploy && npm run build"
-  publish = ".next"
+  command = "npm run build"
 
 [functions]
   node_bundler = "esbuild"
@@ -9,9 +8,3 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# Route ALL requests to the actual handler name
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-server-handler"
-  status = 200
