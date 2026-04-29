@@ -13,10 +13,17 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  // Pull all skills and group by subject
-  const skills = await prisma.skill.findMany({
-    orderBy: [{ subject: "asc" }, { title: "asc" }],
-  });
+  let skills: Awaited<ReturnType<typeof prisma.skill.findMany>> = []
+  let loadError: string | null = null;
+
+  try {
+    skills = await prisma.skill.findMany({
+      orderBy: [{ subject: "asc" }, { title: "asc" }],
+    });
+  } catch (error) {
+    console.error("Failed to load skills:", error);
+    loadError = "Skill library is temporarily unavailable.";
+  }
 
   const bySubject = skills.reduce<Record<string, typeof skills>>((acc, s) => {
     (acc[s.subject] ||= []).push(s);
@@ -52,6 +59,8 @@ export default async function HomePage() {
       {/* Subjects Covered (now clickable) */}
       <div className="rounded-xl p-5 bg-[#702E3D] text-white">
         <h2 className="text-2xl font-semibold mb-4">Subjects Covered</h2>
+
+        {loadError ? (<p className="rounded border border-white/40 bg-white/10 p-3">{loadError}</p>) : null}
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {subjectsOrder

@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,17 +25,32 @@ export default async function Library({
 }: {
   searchParams: { subject?: string };
 }) {
-  const session = await getServerSession(authOptions);
+  let session = null;
+  if (process.env.DATABASE_URL) {
+    try {
+      const { authOptions } = await import('@/lib/auth');
+      session = await getServerSession(authOptions);
+    } catch (error) {
+      console.error('Library session initialization failed:', error);
+    }
+  }
+
   if (!session?.user) {
     redirect('/');
   }
 
-  const skills = await prisma.skill.findMany({
+  let skills = [];
+  try {
+    skills = await prisma.skill.findMany({
     where: searchParams.subject
       ? { subject: searchParams.subject as Subject }
       : undefined,
     orderBy: [{ subject: 'asc' }, { title: 'asc' }],
   });
+  } catch (error) {
+    console.error('Failed to load library skills:', error);
+    return <div className="container mx-auto p-6"><h1 className="text-2xl font-bold">Skill Library</h1><p className="mt-2 text-muted-foreground">Unable to load skills right now.</p></div>;
+  }
 
   const groupedSkills = skills.reduce((acc, skill) => {
     if (!acc[skill.subject]) {
