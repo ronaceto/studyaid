@@ -8,8 +8,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "build:full": "node tools/full-build.mjs",
-    "check:netlify-base": "node tools/verify-netlify-base.mjs",
-    "check:env": "node tools/check-env.mjs"
+    "check:netlify-base": "node tools/verify-netlify-base.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
