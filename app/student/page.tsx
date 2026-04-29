@@ -16,7 +16,10 @@ type SessionRow = {
 };
 
 export default async function StudentPage() {
-  const sessions: SessionRow[] = await prisma.session.findMany({
+  let sessions: SessionRow[] = [];
+
+  try {
+    sessions = await prisma.session.findMany({
     orderBy: { startedAt: "desc" as const },
     select: {
       id: true,
@@ -28,6 +31,10 @@ export default async function StudentPage() {
       status: true,
     },
   });
+  } catch (error) {
+    console.error("Failed to load sessions:", error);
+    return <div className="p-6"><h1 className="text-2xl font-bold mb-2">Student Dashboard</h1><p>Student sessions are temporarily unavailable.</p></div>;
+  }
 
   const skillIds = Array.from(
     new Set(

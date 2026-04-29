@@ -18,7 +18,10 @@ type SessionRow = {
 
 export default async function ParentPage() {
   // 1) Use only fields that exist; order by startedAt (exists) not createdAt/updatedAt
-  const sessions: SessionRow[] = await prisma.session.findMany({
+  let sessions: SessionRow[] = [];
+
+  try {
+    sessions = await prisma.session.findMany({
     orderBy: { startedAt: "desc" as const },
     select: {
       id: true,
@@ -30,6 +33,10 @@ export default async function ParentPage() {
       status: true,
     },
   });
+  } catch (error) {
+    console.error("Failed to load sessions:", error);
+    return <div className="p-6"><h1 className="text-2xl font-bold mb-2">Parent Dashboard</h1><p>Parent dashboard data is temporarily unavailable.</p></div>;
+  }
 
   // 2) Resolve skill titles (Skill has id/title, not name)
   const skillIds = Array.from(

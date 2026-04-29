@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { openai } from "@/lib/openai";
+import { getOpenAI } from "@/lib/openai";
 
 export async function POST(req: Request) {
   try {
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const count = Number.isFinite(body.count) ? Math.max(1, Math.min(10, body.count)) : 5;
     if (!topic) return NextResponse.json({ ok:false, error:"Missing topic" }, { status:400 });
 
-    const r = await openai.chat.completions.create({
+    const r = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "Return strict JSON: items:[{prompt, choices:[A,B,C,D], answer:'A'|'B'|'C'|'D'}]" },
