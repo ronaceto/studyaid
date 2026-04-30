@@ -7,7 +7,10 @@
     "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start -p 3000",
-    "build:full": "node tools/full-build.mjs"
+    "build:full": "node tools/full-build.mjs",
+    "check:netlify-base": "node tools/verify-netlify-base.mjs",
+    "check:env": "node tools/check-env.mjs",
+    "smoke": "node tools/smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
